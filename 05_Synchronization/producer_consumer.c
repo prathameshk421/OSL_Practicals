@@ -31,7 +31,7 @@ void *producer(void *arg) {
         int k = (rand() % 9) + 1; // Generate non-zero random item (1 to 9)
 
         printf("Producer %d wants to add item %d\n", p_id, k);
-        
+
         sem_wait(&empty);
         pthread_mutex_lock(&mutex);
 
@@ -45,7 +45,7 @@ void *producer(void *arg) {
         printf("Producer %d has added item %d\n", p_id, k);
         in = (in + 1) % BUF;
         display_buffer();
-        sleep(rand()%5+1);
+        sleep(rand() % 5 + 1);
 
         pthread_mutex_unlock(&mutex);
         sem_post(&full);
@@ -76,7 +76,7 @@ void *consumer(void *arg) {
         printf("Consumer %d consumed item %d from slot %d\n", c_id, item, out);
         out = (out + 1) % BUF;
         display_buffer();
-        sleep(rand()%5+1);
+        sleep(rand() % 5 + 1);
 
         pthread_mutex_unlock(&mutex);
         sem_post(&empty);
@@ -90,10 +90,12 @@ int main() {
     int p_num, c_num;
 
     printf("Enter number of producers: ");
-    if (scanf("%d", &p_num) != 1) return 1;
+    if (scanf("%d", &p_num) != 1)
+        return 1;
 
     printf("Enter number of consumers: ");
-    if (scanf("%d", &c_num) != 1) return 1;
+    if (scanf("%d", &c_num) != 1)
+        return 1;
 
     pthread_t producers[p_num];
     pthread_t consumers[c_num];
@@ -105,7 +107,8 @@ int main() {
     sem_init(&full, 0, 0);
     pthread_mutex_init(&mutex, NULL);
 
-    for (int i = 0; i < BUF; i++) buffer[i] = 0;
+    for (int i = 0; i < BUF; i++)
+        buffer[i] = 0;
 
     // Create Producer Threads
     for (int i = 0; i < p_num; i++) {
@@ -130,12 +133,16 @@ int main() {
     }
 
     // Unblock any threads waiting on semaphores so they can read running=0 and terminate
-    for (int i = 0; i < p_num; i++) sem_post(&empty);
-    for (int i = 0; i < c_num; i++) sem_post(&full);
+    for (int i = 0; i < p_num; i++)
+        sem_post(&empty);
+    for (int i = 0; i < c_num; i++)
+        sem_post(&full);
 
     // Join threads
-    for (int i = 0; i < p_num; i++) pthread_join(producers[i], NULL);
-    for (int i = 0; i < c_num; i++) pthread_join(consumers[i], NULL);
+    for (int i = 0; i < p_num; i++)
+        pthread_join(producers[i], NULL);
+    for (int i = 0; i < c_num; i++)
+        pthread_join(consumers[i], NULL);
 
     sem_destroy(&empty);
     sem_destroy(&full);

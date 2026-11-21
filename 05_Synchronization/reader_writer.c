@@ -12,46 +12,38 @@ int running = 1;
 sem_t mutex;
 sem_t wrt;
 
-void *reader(void *arg)
-{
+void *reader(void *arg) {
     int id = *(int *)arg;
 
-    while (1)
-    {
+    while (running) {
         printf("\nReader %d wants to read\n", id);
+
         sem_wait(&mutex);
-
         readcount++;
-
         if (readcount == 1)
             sem_wait(&wrt);
-
         sem_post(&mutex);
 
         printf("Reader %d is reading, value of k is %d\n", id, k);
-        sleep(rand()%5);
+        sleep(rand() % 5);
 
         sem_wait(&mutex);
-
         readcount--;
-
         if (readcount == 0)
             sem_post(&wrt);
-
         sem_post(&mutex);
+
         printf("Reader %d has finished reading\n", id);
-        sleep(rand()%5);
+        sleep(rand() % 5);
     }
 
     return NULL;
 }
 
-void *writer(void *arg)
-{
+void *writer(void *arg) {
     int id = *(int *)arg;
 
-    while (1)
-    {
+    while (running) {
         printf("\nWriter %d wants to write\n", id);
 
         sem_wait(&wrt);
@@ -63,15 +55,13 @@ void *writer(void *arg)
         sem_post(&wrt);
 
         printf("Writer %d has finished writing\n", id);
-
-        sleep(rand()%5);
+        sleep(rand() % 5);
     }
 
     return NULL;
 }
 
-int main()
-{
+int main() {
     int r, w;
 
     printf("Enter number of readers: ");
@@ -91,52 +81,32 @@ int main()
     sem_init(&mutex, 0, 1);
     sem_init(&wrt, 0, 1);
 
-    for (int i = 0; i < r; i++)
-    {
+    for (int i = 0; i < r; i++) {
         reader_id[i] = i + 1;
-
-        pthread_create(
-            &readers[i],
-            NULL,
-            reader,
-            &reader_id[i]
-        );
+        pthread_create(&readers[i], NULL, reader, &reader_id[i]);
     }
 
-    for (int i = 0; i < w; i++)
-    {
+    for (int i = 0; i < w; i++) {
         writer_id[i] = i + 1;
-
-        pthread_create(
-            &writers[i],
-            NULL,
-            writer,
-            &writer_id[i]
-        );
+        pthread_create(&writers[i], NULL, writer, &writer_id[i]);
     }
 
     printf("\nPress 'q' and Enter to exit the program.\n");
 
     char choice;
-
-    while (1)
-    {
+    while (1) {
         choice = getchar();
-
-        if (choice == 'q' || choice == 'Q')
-        {
+        if (choice == 'q' || choice == 'Q') {
             running = 0;
             break;
         }
     }
 
-    for (int i = 0; i < r; i++)
-    {
+    for (int i = 0; i < r; i++) {
         pthread_join(readers[i], NULL);
     }
 
-    for (int i = 0; i < w; i++)
-    {
+    for (int i = 0; i < w; i++) {
         pthread_join(writers[i], NULL);
     }
 
@@ -147,4 +117,3 @@ int main()
 
     return 0;
 }
-
