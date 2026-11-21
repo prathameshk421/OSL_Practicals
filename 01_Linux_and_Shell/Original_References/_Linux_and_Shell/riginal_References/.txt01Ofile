@@ -1,0 +1,6 @@
+	case 'date | cut -d " " -f1' in
+	Mon)echo "Today is Monday";;
+		Tue)echo "Today is Tuesday" ;;
+	Wed)echo "Today is Wednesday" ;;
+		*) ;;
+	esac
