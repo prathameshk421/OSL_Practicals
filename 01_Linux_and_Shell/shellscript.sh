@@ -119,10 +119,10 @@ grade(){
         elif [ $avg -ge 50 ]; then
             grade='C'
         
-        elif [ $avg -gte 36 ]; then
+        elif [ $avg -ge 36 ]; then
             grade='D'
         
-        elif [ $avg -le 36 ]; then
+        else
             grade='FAIL'
         fi
     
@@ -130,7 +130,7 @@ grade(){
     done < stud.db
 
     column -t -s '|' grade.db
-    rm grade.db
+    rm grade.db 
 
 }
 
