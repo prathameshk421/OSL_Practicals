@@ -24,7 +24,7 @@ if(argc < 2){
     int flag;
     wait(&flag);
     if(WIFEXITED(flag)){
-    printf("child executed successfully, parent exited with status: %d", WEXITSTATUS(flag));
+    printf("child exited with status: %d\n", WEXITSTATUS(flag));
 }
 }
     
