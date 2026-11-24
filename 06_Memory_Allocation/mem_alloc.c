@@ -39,6 +39,52 @@ void firstFit(int b[],int nb,int p[],int np){
     }
 }
 
+void nextFit(int b[],int nb,int p[],int np){
+    int block[MAX],alloc[MAX];
+
+    for(int i=0;i<nb;i++){
+        block[i]=b[i];
+    }
+
+    for(int i=0;i<np;i++){
+        alloc[i]=-1;
+    }
+
+    int last=0;
+
+    for(int i=0;i<np;i++){
+        int found=-1;
+
+        for(int k=0;k<nb;k++){
+            int j=(last+k)%nb;
+            if(block[j]>=p[i]){
+                found=j;
+                break;
+            }
+        }
+
+        if(found!=-1){
+            alloc[i]=found;
+            block[found]=block[found]-p[i];
+            last=(found+1)%nb;
+        }
+    }
+
+    printf("\n--- Next Fit ---\n");
+    printf("Process\tSize\tBlock\n");
+
+    for(int i=0;i<np;i++){
+        printf("P%d\t%d\t",i+1,p[i]);
+
+        if(alloc[i]!=-1){
+            printf("B%d\n",alloc[i]+1);
+        }
+        else{
+            printf("Not Allocated\n");
+        }
+    }
+}
+
 void bestFit(int b[],int nb,int p[],int np){
     int block[MAX],alloc[MAX];
 
@@ -152,6 +198,7 @@ int main(){
     }
 
     firstFit(blocks,nb,procs,np);
+    nextFit(blocks,nb,procs,np);
     bestFit(blocks,nb,procs,np);
     worstFit(blocks,nb,procs,np);
 
