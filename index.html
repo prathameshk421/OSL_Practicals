@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>OSL Practicals — Viva & Annotated Code Study Guide</title>
+  <meta name="description" content="Interactive mobile-friendly Operating Systems Lab (OSL) Viva Cheat Sheets & Highlighted Code Explanations for all 8 practicals.">
+  <meta name="color-scheme" content="light dark">
+  <script>
+    try {
+      const saved = localStorage.getItem("color-scheme");
+      if (saved === "light" || saved === "dark") {
+        document.querySelector('meta[name="color-scheme"]').content = saved;
+      }
+    } catch (_) {}
+  </script>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-badge">OSL</span>
+        <div class="brand-text">
+          <h1>OS Practicals Guide</h1>
+          <p class="brand-sub" id="progressSummary">0 / 8 revised</p>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <button type="button" class="icon-btn" id="searchToggleBtn" aria-label="Search all practicals" aria-expanded="false" aria-controls="searchPanel">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </button>
+
+        <button type="button" class="icon-btn theme-toggle" id="themeToggleBtn" aria-label="Toggle color theme">
+          <span class="theme-option theme-to-dark">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+            <span class="sr-only">Switch to dark theme</span>
+          </span>
+          <span class="theme-option theme-to-light">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <span class="sr-only">Switch to light theme</span>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <div class="search-panel" id="searchPanel" hidden>
+      <div class="search-input-wrap">
+        <input type="search" id="globalSearchInput" placeholder="Search viva Q&A, traps, or code (e.g. fork, Belady, mutex, chmod)..." autocomplete="off">
+        <button type="button" class="clear-search-btn" id="clearSearchBtn" hidden aria-label="Clear search">✕</button>
+      </div>
+      <div class="search-results" id="searchResults" hidden></div>
+    </div>
+
+    <nav class="exp-nav" aria-label="Experiments">
+      <div class="exp-pills" id="expPills"></div>
+    </nav>
+  </header>
+
+  <main class="container" id="mainContent">
+    <section class="exp-hero" id="expHero"></section>
+
+    <div class="mode-bar" role="tablist" aria-label="Study view mode">
+      <button type="button" role="tab" class="mode-tab" id="tabViva" aria-selected="true" data-mode="viva">
+        <span class="mode-icon" aria-hidden="true">📖</span>
+        <span>Viva &amp; Concepts</span>
+      </button>
+      <button type="button" role="tab" class="mode-tab" id="tabCode" aria-selected="false" data-mode="code">
+        <span class="mode-icon" aria-hidden="true">💻</span>
+        <span>Code &amp; Highlights</span>
+      </button>
+    </div>
+
+    <div id="vivaView" class="view-panel"></div>
+    <div id="codeView" class="view-panel" hidden></div>
+  </main>
+
+  <div class="floating-cta-wrap" id="floatingCtaWrap">
+    <button type="button" class="floating-cta" id="floatingCtaBtn">
+      <span id="floatingCtaLabel">Go to Code</span>
+      <span class="floating-cta-arrow" id="floatingCtaArrow" aria-hidden="true">→</span>
+    </button>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <footer class="site-footer">
+    <p>PICT Operating Systems Lab (OSL) · All 8 Practicals · Built for quick mobile revision</p>
+  </footer>
+
+  <script src="assets/data-1-4.js"></script>
+  <script src="assets/data-5-8.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
