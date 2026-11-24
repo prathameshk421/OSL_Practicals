@@ -231,6 +231,52 @@ body {
   transform: scale(0.95);
 }
 
+.search-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 11px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.84rem;
+}
+
+.search-trigger-text,
+.kbd-hint {
+  display: none;
+}
+
+kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.desktop-sidebar {
+  display: none;
+}
+
+.mode-tab-split {
+  display: none;
+}
+
 /* Search Panel */
 .search-panel {
   max-width: 920px;
@@ -1117,4 +1163,222 @@ tr:last-child td {
   .exp-hero h2 { font-size: 1.5rem; }
   .container { padding: 20px 20px 30px; }
   .code-scroll { font-size: 0.85rem; }
+  .search-trigger-btn {
+    padding: 0 12px;
+    color: var(--muted);
+  }
+  .search-trigger-text {
+    display: inline;
+  }
+  .kbd-hint {
+    display: inline-flex;
+    margin-left: 6px;
+  }
+}
+
+/* ==========================================================================
+   Laptop & Desktop Optimization (>= 1024px)
+   ========================================================================== */
+@media (min-width: 1024px) {
+  body {
+    padding-bottom: 40px;
+  }
+
+  .topbar-inner,
+  .search-panel {
+    max-width: 1440px;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  /* Sidebar replaces horizontal pill strip on laptop/desktop */
+  .exp-nav {
+    display: none;
+  }
+
+  .app-shell {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 20px 24px 32px;
+    display: grid;
+    grid-template-columns: 268px minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+
+  .desktop-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: sticky;
+    top: 76px;
+    max-height: calc(100vh - 96px);
+    overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    box-shadow: var(--shadow);
+  }
+
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 4px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-title {
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+  }
+
+  .sidebar-progress {
+    font-size: 0.74rem;
+    font-weight: 750;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  .sidebar-list {
+    display: grid;
+    gap: 5px;
+  }
+
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    padding: 9px 10px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.14s ease, border-color 0.14s ease;
+  }
+
+  .sidebar-item:hover {
+    background: var(--surface-2);
+  }
+
+  .sidebar-item.active {
+    background: var(--accent-soft);
+    border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+    color: var(--accent);
+  }
+
+  .sidebar-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    background: var(--surface-2);
+    font-size: 0.76rem;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  .sidebar-item.active .sidebar-num {
+    background: var(--accent);
+    color: var(--accent-text);
+  }
+
+  .sidebar-item-text {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .sidebar-item-title {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sidebar-item-meta {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  .sidebar-check {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: var(--tip-border);
+  }
+
+  .sidebar-shortcuts {
+    margin-top: 4px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    display: grid;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .shortcut-title {
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 2px;
+  }
+
+  .shortcut-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .container {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .mode-bar {
+    grid-template-columns: repeat(3, 1fr);
+    max-width: 540px;
+  }
+
+  .mode-tab-split {
+    display: flex;
+  }
+
+  .views-grid.is-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr);
+    gap: 18px;
+    align-items: start;
+  }
+
+  .views-grid.is-split .view-panel {
+    max-height: calc(100vh - 150px);
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  /* Hide mobile floating CTA on laptop since Split View + top tabs are right there */
+  .floating-cta-wrap {
+    display: none;
+  }
+
+  .site-footer {
+    max-width: 1440px;
+  }
 }

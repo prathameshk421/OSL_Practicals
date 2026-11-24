@@ -19,11 +19,15 @@
 
   // DOM refs
   const expPillsEl = document.getElementById("expPills");
+  const sidebarListEl = document.getElementById("sidebarList");
+  const sidebarProgressEl = document.getElementById("sidebarProgress");
   const expHeroEl = document.getElementById("expHero");
+  const viewsGridEl = document.getElementById("viewsGrid");
   const vivaViewEl = document.getElementById("vivaView");
   const codeViewEl = document.getElementById("codeView");
   const tabVivaEl = document.getElementById("tabViva");
   const tabCodeEl = document.getElementById("tabCode");
+  const tabSplitEl = document.getElementById("tabSplit");
   const floatingCtaBtn = document.getElementById("floatingCtaBtn");
   const floatingCtaLabel = document.getElementById("floatingCtaLabel");
   const floatingCtaArrow = document.getElementById("floatingCtaArrow");
@@ -165,6 +169,9 @@
 
   function updateProgressUI() {
     progressSummaryEl.textContent = `${state.revised.size} / ${EXPERIMENTS.length} revised`;
+    if (sidebarProgressEl) {
+      sidebarProgressEl.textContent = `${state.revised.size}/${EXPERIMENTS.length}`;
+    }
   }
 
   function renderPills() {
@@ -173,6 +180,23 @@
       const done = state.revised.has(exp.id) ? '<span class="pill-check" aria-label="Revised">✓</span>' : "";
       return `<button type="button" class="exp-pill ${active}" data-exp-idx="${idx}">${done}${exp.num} · ${escapeHtml(exp.shortTitle)}</button>`;
     }).join("");
+
+    if (sidebarListEl) {
+      sidebarListEl.innerHTML = EXPERIMENTS.map((exp, idx) => {
+        const active = idx === state.expIndex ? "active" : "";
+        const done = state.revised.has(exp.id) ? '<span class="sidebar-check" aria-label="Revised">✓</span>' : "";
+        return `
+          <button type="button" class="sidebar-item ${active}" data-exp-idx="${idx}">
+            <span class="sidebar-num">${exp.num}</span>
+            <span class="sidebar-item-text">
+              <span class="sidebar-item-title">${escapeHtml(exp.shortTitle)}</span>
+              <span class="sidebar-item-meta">${escapeHtml(exp.co)} · ${exp.files.length} file${exp.files.length > 1 ? "s" : ""}</span>
+            </span>
+            ${done}
+          </button>
+        `;
+      }).join("");
+    }
 
     const activePill = expPillsEl.querySelector(".exp-pill.active");
     if (activePill) {
@@ -183,7 +207,12 @@
   function renderHero() {
     const exp = currentExp();
     const isDone = state.revised.has(exp.id);
-    const otherModeLabel = state.mode === "viva" ? "Go to Code & Highlights →" : "← Back to Viva & Concepts";
+    const otherModeLabel =
+      state.mode === "viva"
+        ? "Go to Code & Highlights →"
+        : state.mode === "split"
+        ? "Focus Code Full-Width →"
+        : "← Back to Viva & Concepts";
     expHeroEl.innerHTML = `
       <div class="exp-hero-top">
         <span class="exp-tag">Experiment ${exp.num} · ${escapeHtml(exp.co)}</span>
@@ -214,7 +243,7 @@
     });
 
     document.getElementById("heroSwitchBtn").addEventListener("click", () => {
-      setMode(state.mode === "viva" ? "code" : "viva", true);
+      setMode(state.mode === "code" ? "viva" : "code", true);
     });
 
     document.getElementById("heroCopyCmdBtn").addEventListener("click", () => {
@@ -533,33 +562,43 @@
     setTimeout(() => el.classList.remove("flash"), 1400);
   }
 
+  function isDesktop() {
+    return window.matchMedia("(min-width: 1024px)").matches;
+  }
+
   function jumpToCodeHighlight(expNum, fileId, hlId) {
     const idx = EXPERIMENTS.findIndex((e) => e.num === expNum);
     if (idx >= 0) state.expIndex = idx;
     if (fileId) state.fileId = fileId;
-    setMode("code", false);
+    const nextMode = state.mode === "split" && isDesktop() ? "split" : "code";
+    setMode(nextMode, false);
     if (hlId) {
       requestAnimationFrame(() => focusHighlight(hlId));
     }
   }
 
   function setMode(mode, scrollTop) {
-    state.mode = mode;
-    const isViva = mode === "viva";
+    const resolved = mode === "split" && !isDesktop() ? "viva" : mode;
+    state.mode = resolved;
+    const isViva = resolved === "viva";
+    const isCode = resolved === "code";
+    const isSplit = resolved === "split";
+
     tabVivaEl.setAttribute("aria-selected", String(isViva));
-    tabCodeEl.setAttribute("aria-selected", String(!isViva));
-    vivaViewEl.hidden = !isViva;
+    tabCodeEl.setAttribute("aria-selected", String(isCode));
+    if (tabSplitEl) tabSplitEl.setAttribute("aria-selected", String(isSplit));
+
+    vivaViewEl.hidden = isCode;
     codeViewEl.hidden = isViva;
+    if (viewsGridEl) viewsGridEl.classList.toggle("is-split", isSplit);
 
     floatingCtaLabel.textContent = isViva ? "Go to Code" : "Back to Viva";
     floatingCtaArrow.textContent = isViva ? "→" : "←";
 
     renderHero();
-    if (isViva) {
-      renderViva();
-    } else {
-      renderCode();
-    }
+    if (isViva || isSplit) renderViva();
+    if (isCode || isSplit) renderCode();
+
     updateHash();
     if (scrollTop) {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -590,7 +629,7 @@
     const num = parseInt((expPart || "").replace("exp-", ""), 10);
     const idx = EXPERIMENTS.findIndex((e) => e.num === num);
     if (idx >= 0) state.expIndex = idx;
-    if (modePart === "code" || modePart === "viva") state.mode = modePart;
+    if (modePart === "code" || modePart === "viva" || modePart === "split") state.mode = modePart;
     if (filePart) state.fileId = filePart;
   }
 
@@ -759,7 +798,7 @@
   });
 
   // =========================================================================
-  // Event Listeners & Init
+  // Event Listeners, Keyboard Shortcuts & Init
   // =========================================================================
   expPillsEl.addEventListener("click", (e) => {
     const pill = e.target.closest(".exp-pill");
@@ -767,11 +806,61 @@
     selectExperiment(Number(pill.dataset.expIdx), state.mode);
   });
 
+  if (sidebarListEl) {
+    sidebarListEl.addEventListener("click", (e) => {
+      const item = e.target.closest(".sidebar-item");
+      if (!item) return;
+      selectExperiment(Number(item.dataset.expIdx), state.mode);
+    });
+  }
+
   tabVivaEl.addEventListener("click", () => setMode("viva", false));
   tabCodeEl.addEventListener("click", () => setMode("code", false));
+  if (tabSplitEl) tabSplitEl.addEventListener("click", () => setMode("split", false));
   floatingCtaBtn.addEventListener("click", () => setMode(state.mode === "viva" ? "code" : "viva", true));
 
+  document.addEventListener("keydown", (e) => {
+    const tag = (e.target && e.target.tagName) || "";
+    const inInput = tag === "INPUT" || tag === "TEXTAREA" || e.target.isContentEditable;
+
+    if (e.key === "Escape" && !searchPanelEl.hidden) {
+      searchPanelEl.hidden = true;
+      searchResultsEl.hidden = true;
+      searchToggleBtn.setAttribute("aria-expanded", "false");
+      return;
+    }
+
+    if (inInput || e.metaKey || e.ctrlKey || e.altKey) return;
+
+    if (e.key === "/") {
+      e.preventDefault();
+      searchPanelEl.hidden = false;
+      searchToggleBtn.setAttribute("aria-expanded", "true");
+      searchInputEl.focus();
+    } else if (e.key >= "1" && e.key <= "8") {
+      selectExperiment(Number(e.key) - 1, state.mode);
+    } else if (e.key.toLowerCase() === "c") {
+      setMode(state.mode === "code" ? "viva" : "code", false);
+    } else if (e.key.toLowerCase() === "s" && isDesktop()) {
+      setMode(state.mode === "split" ? "viva" : "split", false);
+    } else if (e.key === "[") {
+      selectExperiment(state.expIndex - 1, state.mode);
+    } else if (e.key === "]") {
+      selectExperiment(state.expIndex + 1, state.mode);
+    }
+  });
+
+  window.matchMedia("(min-width: 1024px)").addEventListener("change", (ev) => {
+    if (!ev.matches && state.mode === "split") {
+      setMode("viva", false);
+    }
+  });
+
   applyHash();
+  // Default to Split View on wide laptops if no explicit hash mode was requested
+  if (!location.hash && isDesktop()) {
+    state.mode = "split";
+  }
   updateProgressUI();
   renderPills();
   setMode(state.mode, false);

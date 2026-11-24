@@ -28,11 +28,13 @@
       </div>
 
       <div class="topbar-actions">
-        <button type="button" class="icon-btn" id="searchToggleBtn" aria-label="Search all practicals" aria-expanded="false" aria-controls="searchPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <button type="button" class="search-trigger-btn" id="searchToggleBtn" aria-label="Search all practicals" aria-expanded="false" aria-controls="searchPanel">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
+          <span class="search-trigger-text">Search viva, traps, code…</span>
+          <kbd class="kbd-hint">/</kbd>
         </button>
 
         <button type="button" class="icon-btn theme-toggle" id="themeToggleBtn" aria-label="Toggle color theme">
@@ -73,23 +75,46 @@
     </nav>
   </header>
 
-  <main class="container" id="mainContent">
-    <section class="exp-hero" id="expHero"></section>
+  <div class="app-shell">
+    <aside class="desktop-sidebar" aria-label="Experiments sidebar">
+      <div class="sidebar-header">
+        <span class="sidebar-title">All 8 Practicals</span>
+        <span class="sidebar-progress" id="sidebarProgress">0/8</span>
+      </div>
+      <div class="sidebar-list" id="sidebarList"></div>
+      <div class="sidebar-shortcuts">
+        <div class="shortcut-title">Keyboard Shortcuts</div>
+        <div class="shortcut-row"><kbd>1</kbd>–<kbd>8</kbd><span>Switch experiment</span></div>
+        <div class="shortcut-row"><kbd>C</kbd><span>Toggle Viva / Code</span></div>
+        <div class="shortcut-row"><kbd>S</kbd><span>Split View (Side-by-Side)</span></div>
+        <div class="shortcut-row"><kbd>/</kbd><span>Search all practicals</span></div>
+      </div>
+    </aside>
 
-    <div class="mode-bar" role="tablist" aria-label="Study view mode">
-      <button type="button" role="tab" class="mode-tab" id="tabViva" aria-selected="true" data-mode="viva">
-        <span class="mode-icon" aria-hidden="true">📖</span>
-        <span>Viva &amp; Concepts</span>
-      </button>
-      <button type="button" role="tab" class="mode-tab" id="tabCode" aria-selected="false" data-mode="code">
-        <span class="mode-icon" aria-hidden="true">💻</span>
-        <span>Code &amp; Highlights</span>
-      </button>
-    </div>
+    <main class="container" id="mainContent">
+      <section class="exp-hero" id="expHero"></section>
 
-    <div id="vivaView" class="view-panel"></div>
-    <div id="codeView" class="view-panel" hidden></div>
-  </main>
+      <div class="mode-bar" role="tablist" aria-label="Study view mode">
+        <button type="button" role="tab" class="mode-tab" id="tabViva" aria-selected="true" data-mode="viva">
+          <span class="mode-icon" aria-hidden="true">📖</span>
+          <span>Viva &amp; Concepts</span>
+        </button>
+        <button type="button" role="tab" class="mode-tab" id="tabCode" aria-selected="false" data-mode="code">
+          <span class="mode-icon" aria-hidden="true">💻</span>
+          <span>Code &amp; Highlights</span>
+        </button>
+        <button type="button" role="tab" class="mode-tab mode-tab-split" id="tabSplit" aria-selected="false" data-mode="split">
+          <span class="mode-icon" aria-hidden="true">◫</span>
+          <span>Split View</span>
+        </button>
+      </div>
+
+      <div class="views-grid" id="viewsGrid">
+        <div id="vivaView" class="view-panel"></div>
+        <div id="codeView" class="view-panel" hidden></div>
+      </div>
+    </main>
+  </div>
 
   <div class="floating-cta-wrap" id="floatingCtaWrap">
     <button type="button" class="floating-cta" id="floatingCtaBtn">
