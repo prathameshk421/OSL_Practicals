@@ -1,5 +1,3 @@
-#include <algorithm>
-#include <climits>
 #include <iostream>
 #include <queue>
 #include <string>
@@ -28,200 +26,206 @@ void print_result(const string &title, const vector<Process> &p,
          << "\nAvg Turnaround Time: " << (ttat / n) << "\n";
 }
 
-// 1. FCFS (Non-Preemptive) with Arrival Time
+// Helper: returns indices of all processes currently in the ready queue at time t
+vector<int> get_ready(const vector<Process> &p, const vector<int> &rem, int t) {
+    vector<int> ready;
+    for (int i = 0; i < (int)p.size(); i++) {
+        if (p[i].at <= t && rem[i] > 0) {
+            ready.push_back(i);
+        }
+    }
+    return ready;
+}
+
+// 1. FCFS (Non-Preemptive) — Clock Loop + Ready Queue
 void fcfs(const vector<Process> &p) {
     int n = p.size();
-    vector<int> order(n);
-    for (int i = 0; i < n; i++) order[i] = i;
-    stable_sort(order.begin(), order.end(), [&](int a, int b) {
-        return p[a].at < p[b].at;
-    });
+    vector<int> rem(n), ct(n, 0), tat(n, 0), wt(n, 0);
+    for (int i = 0; i < n; i++) rem[i] = p[i].bt;
 
-    vector<int> ct(n, 0), tat(n, 0), wt(n, 0);
-    int cur_t = 0;
-    for (int idx : order) {
-        if (cur_t < p[idx].at) cur_t = p[idx].at;
-        cur_t += p[idx].bt;
-        ct[idx] = cur_t;
-        tat[idx] = ct[idx] - p[idx].at;
-        wt[idx] = tat[idx] - p[idx].bt;
+    int completed = 0, curr = -1;
+    for (int t = 0; completed < n; t++) {
+        if (curr == -1) {
+            vector<int> ready = get_ready(p, rem, t);
+            for (int i : ready) {
+                if (curr == -1 || p[i].at < p[curr].at) curr = i;
+            }
+        }
+        if (curr == -1) continue; // CPU idle
+
+        rem[curr]--;
+        if (rem[curr] == 0) {
+            ct[curr] = t + 1;
+            tat[curr] = ct[curr] - p[curr].at;
+            wt[curr] = tat[curr] - p[curr].bt;
+            completed++;
+            curr = -1;
+        }
     }
     print_result("FCFS (Non-Preemptive)", p, ct, tat, wt);
 }
 
-// 2. SJF (Non-Preemptive) with Arrival Time
+// 2. SJF (Non-Preemptive) — Clock Loop + Ready Queue
 void sjf(const vector<Process> &p) {
     int n = p.size();
-    vector<int> ct(n, 0), tat(n, 0), wt(n, 0);
-    vector<bool> done(n, false);
-    int completed = 0, cur_t = 0;
+    vector<int> rem(n), ct(n, 0), tat(n, 0), wt(n, 0);
+    for (int i = 0; i < n; i++) rem[i] = p[i].bt;
 
-    while (completed < n) {
-        int best = -1;
-        for (int i = 0; i < n; i++) {
-            if (!done[i] && p[i].at <= cur_t) {
-                if (best == -1 || p[i].bt < p[best].bt ||
-                    (p[i].bt == p[best].bt && p[i].at < p[best].at)) {
-                    best = i;
+    int completed = 0, curr = -1;
+    for (int t = 0; completed < n; t++) {
+        if (curr == -1) {
+            vector<int> ready = get_ready(p, rem, t);
+            for (int i : ready) {
+                if (curr == -1 || p[i].bt < p[curr].bt ||
+                    (p[i].bt == p[curr].bt && p[i].at < p[curr].at)) {
+                    curr = i;
                 }
             }
         }
-        if (best == -1) {
-            int next_at = INT_MAX;
-            for (int i = 0; i < n; i++)
-                if (!done[i]) next_at = min(next_at, p[i].at);
-            cur_t = next_at;
-            continue;
+        if (curr == -1) continue;
+
+        rem[curr]--;
+        if (rem[curr] == 0) {
+            ct[curr] = t + 1;
+            tat[curr] = ct[curr] - p[curr].at;
+            wt[curr] = tat[curr] - p[curr].bt;
+            completed++;
+            curr = -1;
         }
-        cur_t += p[best].bt;
-        ct[best] = cur_t;
-        tat[best] = ct[best] - p[best].at;
-        wt[best] = tat[best] - p[best].bt;
-        done[best] = true;
-        completed++;
     }
     print_result("SJF (Non-Preemptive)", p, ct, tat, wt);
 }
 
-// 3. SRTF (Preemptive SJF) with Arrival Time
+// 3. SRTF (Preemptive SJF) — Re-check Ready Queue Every Tick!
 void srtf(const vector<Process> &p) {
     int n = p.size();
     vector<int> rem(n), ct(n, 0), tat(n, 0), wt(n, 0);
     for (int i = 0; i < n; i++) rem[i] = p[i].bt;
 
-    int completed = 0, cur_t = 0;
-    while (completed < n) {
-        int best = -1;
-        for (int i = 0; i < n; i++) {
-            if (rem[i] > 0 && p[i].at <= cur_t) {
-                if (best == -1 || rem[i] < rem[best] ||
-                    (rem[i] == rem[best] && p[i].at < p[best].at)) {
-                    best = i;
-                }
+    int completed = 0;
+    for (int t = 0; completed < n; t++) {
+        vector<int> ready = get_ready(p, rem, t);
+        int curr = -1;
+        for (int i : ready) {
+            if (curr == -1 || rem[i] < rem[curr] ||
+                (rem[i] == rem[curr] && p[i].at < p[curr].at)) {
+                curr = i;
             }
         }
-        if (best == -1) {
-            cur_t++;
-            continue;
-        }
-        rem[best]--;
-        cur_t++;
-        if (rem[best] == 0) {
-            ct[best] = cur_t;
-            tat[best] = ct[best] - p[best].at;
-            wt[best] = tat[best] - p[best].bt;
+        if (curr == -1) continue;
+
+        rem[curr]--;
+        if (rem[curr] == 0) {
+            ct[curr] = t + 1;
+            tat[curr] = ct[curr] - p[curr].at;
+            wt[curr] = tat[curr] - p[curr].bt;
             completed++;
         }
     }
     print_result("SRTF (Preemptive SJF)", p, ct, tat, wt);
 }
 
-// 4. Priority (Non-Preemptive, lower number = higher priority)
+// 4. Priority (Non-Preemptive, low=high) — Clock Loop + Ready Queue
 void priority_np(const vector<Process> &p) {
     int n = p.size();
-    vector<int> ct(n, 0), tat(n, 0), wt(n, 0);
-    vector<bool> done(n, false);
-    int completed = 0, cur_t = 0;
+    vector<int> rem(n), ct(n, 0), tat(n, 0), wt(n, 0);
+    for (int i = 0; i < n; i++) rem[i] = p[i].bt;
 
-    while (completed < n) {
-        int best = -1;
-        for (int i = 0; i < n; i++) {
-            if (!done[i] && p[i].at <= cur_t) {
-                if (best == -1 || p[i].pr < p[best].pr ||
-                    (p[i].pr == p[best].pr && p[i].at < p[best].at)) {
-                    best = i;
+    int completed = 0, curr = -1;
+    for (int t = 0; completed < n; t++) {
+        if (curr == -1) {
+            vector<int> ready = get_ready(p, rem, t);
+            for (int i : ready) {
+                if (curr == -1 || p[i].pr < p[curr].pr ||
+                    (p[i].pr == p[curr].pr && p[i].at < p[curr].at)) {
+                    curr = i;
                 }
             }
         }
-        if (best == -1) {
-            int next_at = INT_MAX;
-            for (int i = 0; i < n; i++)
-                if (!done[i]) next_at = min(next_at, p[i].at);
-            cur_t = next_at;
-            continue;
+        if (curr == -1) continue;
+
+        rem[curr]--;
+        if (rem[curr] == 0) {
+            ct[curr] = t + 1;
+            tat[curr] = ct[curr] - p[curr].at;
+            wt[curr] = tat[curr] - p[curr].bt;
+            completed++;
+            curr = -1;
         }
-        cur_t += p[best].bt;
-        ct[best] = cur_t;
-        tat[best] = ct[best] - p[best].at;
-        wt[best] = tat[best] - p[best].bt;
-        done[best] = true;
-        completed++;
     }
     print_result("Priority (Non-Preemptive, low=high)", p, ct, tat, wt);
 }
 
-// 5. Priority (Preemptive, lower number = higher priority)
+// 5. Priority (Preemptive, low=high) — Re-check Ready Queue Every Tick!
 void priority_p(const vector<Process> &p) {
     int n = p.size();
     vector<int> rem(n), ct(n, 0), tat(n, 0), wt(n, 0);
     for (int i = 0; i < n; i++) rem[i] = p[i].bt;
 
-    int completed = 0, cur_t = 0;
-    while (completed < n) {
-        int best = -1;
-        for (int i = 0; i < n; i++) {
-            if (rem[i] > 0 && p[i].at <= cur_t) {
-                if (best == -1 || p[i].pr < p[best].pr ||
-                    (p[i].pr == p[best].pr && p[i].at < p[best].at)) {
-                    best = i;
-                }
+    int completed = 0;
+    for (int t = 0; completed < n; t++) {
+        vector<int> ready = get_ready(p, rem, t);
+        int curr = -1;
+        for (int i : ready) {
+            if (curr == -1 || p[i].pr < p[curr].pr ||
+                (p[i].pr == p[curr].pr && p[i].at < p[curr].at)) {
+                curr = i;
             }
         }
-        if (best == -1) {
-            cur_t++;
-            continue;
-        }
-        rem[best]--;
-        cur_t++;
-        if (rem[best] == 0) {
-            ct[best] = cur_t;
-            tat[best] = ct[best] - p[best].at;
-            wt[best] = tat[best] - p[best].bt;
+        if (curr == -1) continue;
+
+        rem[curr]--;
+        if (rem[curr] == 0) {
+            ct[curr] = t + 1;
+            tat[curr] = ct[curr] - p[curr].at;
+            wt[curr] = tat[curr] - p[curr].bt;
             completed++;
         }
     }
     print_result("Priority (Preemptive, low=high)", p, ct, tat, wt);
 }
 
-// 6. Round Robin (Preemptive) with Arrival Time & Ready Queue
+// 6. Round Robin (Preemptive) — Clock Loop + FIFO Ready Queue
 void round_robin(const vector<Process> &p, int time_q) {
     int n = p.size();
-    vector<int> order(n);
-    for (int i = 0; i < n; i++) order[i] = i;
-    stable_sort(order.begin(), order.end(), [&](int a, int b) {
-        return p[a].at < p[b].at;
-    });
-
     vector<int> rem(n), ct(n, 0), tat(n, 0), wt(n, 0);
     for (int i = 0; i < n; i++) rem[i] = p[i].bt;
 
     queue<int> rq;
-    int next_idx = 0, completed = 0, cur_t = 0;
+    int completed = 0, curr = -1, slice = 0;
 
-    while (completed < n) {
-        if (rq.empty()) {
-            cur_t = max(cur_t, p[order[next_idx]].at);
-            while (next_idx < n && p[order[next_idx]].at <= cur_t)
-                rq.push(order[next_idx++]);
+    for (int t = 0; completed < n; t++) {
+        // 1. Add processes arriving at time t into ready queue
+        for (int i = 0; i < n; i++) {
+            if (p[i].at == t) rq.push(i);
         }
 
-        int i = rq.front();
-        rq.pop();
+        // 2. If previous process finished its quantum, push it to the back
+        if (curr != -1 && slice == time_q) {
+            rq.push(curr);
+            curr = -1;
+            slice = 0;
+        }
 
-        int run = min(time_q, rem[i]);
-        rem[i] -= run;
-        cur_t += run;
+        // 3. If CPU is free, take next process from ready queue
+        if (curr == -1 && !rq.empty()) {
+            curr = rq.front();
+            rq.pop();
+            slice = 0;
+        }
 
-        while (next_idx < n && p[order[next_idx]].at <= cur_t)
-            rq.push(order[next_idx++]);
+        if (curr == -1) continue; // CPU idle
 
-        if (rem[i] == 0) {
-            ct[i] = cur_t;
-            tat[i] = ct[i] - p[i].at;
-            wt[i] = tat[i] - p[i].bt;
+        // 4. Execute for 1 tick
+        rem[curr]--;
+        slice++;
+        if (rem[curr] == 0) {
+            ct[curr] = t + 1;
+            tat[curr] = ct[curr] - p[curr].at;
+            wt[curr] = tat[curr] - p[curr].bt;
             completed++;
-        } else {
-            rq.push(i);
+            curr = -1;
+            slice = 0;
         }
     }
     print_result("Round Robin (q=" + to_string(time_q) + ")", p, ct, tat, wt);
