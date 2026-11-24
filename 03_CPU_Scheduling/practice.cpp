@@ -22,33 +22,31 @@ void print_result(const string &title, const vector<Process> &p,
         twt += wt[i];
         ttat += tat[i];
     }
-    cout << "Avg Waiting Time: " << (twt / n)
-         << "\nAvg Turnaround Time: " << (ttat / n) << "\n";
+    cout << "Avg WT: " << twt / n << "  |  Avg TAT: " << ttat / n << "\n";
 }
 
-// Helper: returns indices of all processes currently in the ready queue at time t
-vector<int> get_ready(const vector<Process> &p, const vector<int> &rem, int t) {
-    vector<int> ready;
-    for (int i = 0; i < (int)p.size(); i++) {
-        if (p[i].at <= t && rem[i] > 0) {
-            ready.push_back(i);
-        }
-    }
-    return ready;
-}
-
-// 1. FCFS (Non-Preemptive) — Clock Loop + Ready Queue
-void fcfs(const vector<Process> &p) {
+// Unified scheduler for 1:FCFS, 2:SJF(NP), 3:SRTF(P), 4:Priority(NP), 5:Priority(P)
+void schedule(const vector<Process> &p, int mode, const string &title) {
     int n = p.size();
-    vector<int> rem(n), ct(n, 0), tat(n, 0), wt(n, 0);
+    bool preemptive = (mode == 3 || mode == 5);
+    vector<int> rem(n), ct(n), tat(n), wt(n);
     for (int i = 0; i < n; i++) rem[i] = p[i].bt;
 
-    int completed = 0, curr = -1;
-    for (int t = 0; completed < n; t++) {
-        if (curr == -1) {
-            vector<int> ready = get_ready(p, rem, t);
-            for (int i : ready) {
-                if (curr == -1 || p[i].at < p[curr].at) curr = i;
+    int done = 0, curr = -1;
+    for (int t = 0; done < n; t++) {
+        // Re-pick if CPU is free (NP) OR every tick (Preemptive)
+        if (curr == -1 || preemptive) {
+            curr = -1;
+            for (int i = 0; i < n; i++) {
+                if (p[i].at > t || rem[i] == 0) continue; // Not in ready queue
+                if (curr == -1) { curr = i; continue; }
+
+                int a = (mode == 1) ? p[i].at  : (mode == 2) ? p[i].bt  :
+                        (mode == 3) ? rem[i]   : p[i].pr;
+                int b = (mode == 1) ? p[curr].at : (mode == 2) ? p[curr].bt :
+                        (mode == 3) ? rem[curr]  : p[curr].pr;
+
+                if (a < b || (a == b && p[i].at < p[curr].at)) curr = i;
             }
         }
         if (curr == -1) continue; // CPU idle
@@ -58,200 +56,71 @@ void fcfs(const vector<Process> &p) {
             ct[curr] = t + 1;
             tat[curr] = ct[curr] - p[curr].at;
             wt[curr] = tat[curr] - p[curr].bt;
-            completed++;
+            done++;
             curr = -1;
         }
     }
-    print_result("FCFS (Non-Preemptive)", p, ct, tat, wt);
+    print_result(title, p, ct, tat, wt);
 }
 
-// 2. SJF (Non-Preemptive) — Clock Loop + Ready Queue
-void sjf(const vector<Process> &p) {
+// 6. Round Robin (Preemptive) with Arrival Time & FIFO Ready Queue
+void round_robin(const vector<Process> &p, int q) {
     int n = p.size();
-    vector<int> rem(n), ct(n, 0), tat(n, 0), wt(n, 0);
-    for (int i = 0; i < n; i++) rem[i] = p[i].bt;
-
-    int completed = 0, curr = -1;
-    for (int t = 0; completed < n; t++) {
-        if (curr == -1) {
-            vector<int> ready = get_ready(p, rem, t);
-            for (int i : ready) {
-                if (curr == -1 || p[i].bt < p[curr].bt ||
-                    (p[i].bt == p[curr].bt && p[i].at < p[curr].at)) {
-                    curr = i;
-                }
-            }
-        }
-        if (curr == -1) continue;
-
-        rem[curr]--;
-        if (rem[curr] == 0) {
-            ct[curr] = t + 1;
-            tat[curr] = ct[curr] - p[curr].at;
-            wt[curr] = tat[curr] - p[curr].bt;
-            completed++;
-            curr = -1;
-        }
-    }
-    print_result("SJF (Non-Preemptive)", p, ct, tat, wt);
-}
-
-// 3. SRTF (Preemptive SJF) — Re-check Ready Queue Every Tick!
-void srtf(const vector<Process> &p) {
-    int n = p.size();
-    vector<int> rem(n), ct(n, 0), tat(n, 0), wt(n, 0);
-    for (int i = 0; i < n; i++) rem[i] = p[i].bt;
-
-    int completed = 0;
-    for (int t = 0; completed < n; t++) {
-        vector<int> ready = get_ready(p, rem, t);
-        int curr = -1;
-        for (int i : ready) {
-            if (curr == -1 || rem[i] < rem[curr] ||
-                (rem[i] == rem[curr] && p[i].at < p[curr].at)) {
-                curr = i;
-            }
-        }
-        if (curr == -1) continue;
-
-        rem[curr]--;
-        if (rem[curr] == 0) {
-            ct[curr] = t + 1;
-            tat[curr] = ct[curr] - p[curr].at;
-            wt[curr] = tat[curr] - p[curr].bt;
-            completed++;
-        }
-    }
-    print_result("SRTF (Preemptive SJF)", p, ct, tat, wt);
-}
-
-// 4. Priority (Non-Preemptive, low=high) — Clock Loop + Ready Queue
-void priority_np(const vector<Process> &p) {
-    int n = p.size();
-    vector<int> rem(n), ct(n, 0), tat(n, 0), wt(n, 0);
-    for (int i = 0; i < n; i++) rem[i] = p[i].bt;
-
-    int completed = 0, curr = -1;
-    for (int t = 0; completed < n; t++) {
-        if (curr == -1) {
-            vector<int> ready = get_ready(p, rem, t);
-            for (int i : ready) {
-                if (curr == -1 || p[i].pr < p[curr].pr ||
-                    (p[i].pr == p[curr].pr && p[i].at < p[curr].at)) {
-                    curr = i;
-                }
-            }
-        }
-        if (curr == -1) continue;
-
-        rem[curr]--;
-        if (rem[curr] == 0) {
-            ct[curr] = t + 1;
-            tat[curr] = ct[curr] - p[curr].at;
-            wt[curr] = tat[curr] - p[curr].bt;
-            completed++;
-            curr = -1;
-        }
-    }
-    print_result("Priority (Non-Preemptive, low=high)", p, ct, tat, wt);
-}
-
-// 5. Priority (Preemptive, low=high) — Re-check Ready Queue Every Tick!
-void priority_p(const vector<Process> &p) {
-    int n = p.size();
-    vector<int> rem(n), ct(n, 0), tat(n, 0), wt(n, 0);
-    for (int i = 0; i < n; i++) rem[i] = p[i].bt;
-
-    int completed = 0;
-    for (int t = 0; completed < n; t++) {
-        vector<int> ready = get_ready(p, rem, t);
-        int curr = -1;
-        for (int i : ready) {
-            if (curr == -1 || p[i].pr < p[curr].pr ||
-                (p[i].pr == p[curr].pr && p[i].at < p[curr].at)) {
-                curr = i;
-            }
-        }
-        if (curr == -1) continue;
-
-        rem[curr]--;
-        if (rem[curr] == 0) {
-            ct[curr] = t + 1;
-            tat[curr] = ct[curr] - p[curr].at;
-            wt[curr] = tat[curr] - p[curr].bt;
-            completed++;
-        }
-    }
-    print_result("Priority (Preemptive, low=high)", p, ct, tat, wt);
-}
-
-// 6. Round Robin (Preemptive) — Clock Loop + FIFO Ready Queue
-void round_robin(const vector<Process> &p, int time_q) {
-    int n = p.size();
-    vector<int> rem(n), ct(n, 0), tat(n, 0), wt(n, 0);
+    vector<int> rem(n), ct(n), tat(n), wt(n);
     for (int i = 0; i < n; i++) rem[i] = p[i].bt;
 
     queue<int> rq;
-    int completed = 0, curr = -1, slice = 0;
+    int done = 0, curr = -1, slice = 0;
 
-    for (int t = 0; completed < n; t++) {
-        // 1. Add processes arriving at time t into ready queue
-        for (int i = 0; i < n; i++) {
-            if (p[i].at == t) rq.push(i);
-        }
+    for (int t = 0; done < n; t++) {
+        for (int i = 0; i < n; i++)
+            if (p[i].at == t) rq.push(i); // Add newly arrived processes
 
-        // 2. If previous process finished its quantum, push it to the back
-        if (curr != -1 && slice == time_q) {
+        if (curr != -1 && slice == q) {   // Quantum expired -> back of queue
             rq.push(curr);
             curr = -1;
             slice = 0;
         }
-
-        // 3. If CPU is free, take next process from ready queue
-        if (curr == -1 && !rq.empty()) {
+        if (curr == -1 && !rq.empty()) {  // Pick next from queue
             curr = rq.front();
             rq.pop();
             slice = 0;
         }
+        if (curr == -1) continue;         // CPU idle
 
-        if (curr == -1) continue; // CPU idle
-
-        // 4. Execute for 1 tick
         rem[curr]--;
         slice++;
         if (rem[curr] == 0) {
             ct[curr] = t + 1;
             tat[curr] = ct[curr] - p[curr].at;
             wt[curr] = tat[curr] - p[curr].bt;
-            completed++;
+            done++;
             curr = -1;
             slice = 0;
         }
     }
-    print_result("Round Robin (q=" + to_string(time_q) + ")", p, ct, tat, wt);
+    print_result("Round Robin (q=" + to_string(q) + ")", p, ct, tat, wt);
 }
 
 int main() {
-    int n, time_q;
+    int n, q;
     cout << "Enter number of processes: ";
     cin >> n;
 
     vector<Process> p(n);
     for (int i = 0; i < n; i++) {
         p[i].id = i + 1;
-        cout << "Enter Arrival Time, Burst Time, Priority for P" << p[i].id << ": ";
+        cout << "Enter AT, BT, Priority for P" << p[i].id << ": ";
         cin >> p[i].at >> p[i].bt >> p[i].pr;
     }
-
     cout << "Enter time quantum for Round Robin: ";
-    cin >> time_q;
+    cin >> q;
 
-    fcfs(p);
-    sjf(p);
-    srtf(p);
-    priority_np(p);
-    priority_p(p);
-    round_robin(p, time_q);
-
+    schedule(p, 1, "FCFS (Non-Preemptive)");
+    schedule(p, 2, "SJF (Non-Preemptive)");
+    schedule(p, 3, "SRTF (Preemptive SJF)");
+    schedule(p, 4, "Priority (Non-Preemptive)");
+    schedule(p, 5, "Priority (Preemptive)");
+    round_robin(p, q);
     return 0;
 }

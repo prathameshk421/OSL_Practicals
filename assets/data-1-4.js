@@ -798,7 +798,7 @@ window.OSL_EXPERIMENTS_1_4 = [
         "a": "`TAT = CT - AT` (total time from arrival to completion). `WT = TAT - BT` (total time spent waiting in the Ready Queue).",
         "codeRef": {
           "fileId": "cpu_sched",
-          "hlId": "fcfs-fn"
+          "hlId": "sched-pick"
         }
       },
       {
@@ -806,7 +806,7 @@ window.OSL_EXPERIMENTS_1_4 = [
         "a": "In FCFS/SJF/Priority(NP) we jump clock `t` directly to the next arriving process's `at` (`t = max(t, at)`). In SRTF/Priority(P) we advance `t++` across idle ticks.",
         "codeRef": {
           "fileId": "cpu_sched",
-          "hlId": "sjf-fn"
+          "hlId": "sched-pick"
         }
       },
       {
@@ -822,7 +822,7 @@ window.OSL_EXPERIMENTS_1_4 = [
         "a": "Because preempting whenever a shorter remaining burst arrives mathematically guarantees the lowest possible Average Waiting Time.",
         "codeRef": {
           "fileId": "cpu_sched",
-          "hlId": "srtf-fn"
+          "hlId": "sched-pick"
         }
       },
       {
@@ -834,7 +834,7 @@ window.OSL_EXPERIMENTS_1_4 = [
         "a": "Tracks remaining time `rem[i]`. Every 1 time unit `t`, picks the arrived process (`at <= t`) with minimum `rem[i]`, decrements `rem[best]--`, and records `ct = t` when `rem[best] == 0`.",
         "codeRef": {
           "fileId": "cpu_sched",
-          "hlId": "srtf-fn"
+          "hlId": "sched-pick"
         }
       },
       {
@@ -842,7 +842,7 @@ window.OSL_EXPERIMENTS_1_4 = [
         "a": "Non-preemptive runs the chosen highest-priority job to completion. Preemptive checks every tick and immediately switches if a higher-priority (smaller `pr`) process arrives!",
         "codeRef": {
           "fileId": "cpu_sched",
-          "hlId": "pr-p-fn"
+          "hlId": "sched-pick"
         }
       },
       {
@@ -854,7 +854,7 @@ window.OSL_EXPERIMENTS_1_4 = [
         "a": "Lower number = higher priority (`1` is highest), because we compare `procs[i].pr < procs[best].pr`.",
         "codeRef": {
           "fileId": "cpu_sched",
-          "hlId": "pr-np-fn"
+          "hlId": "sched-pick"
         }
       },
       {
@@ -904,64 +904,40 @@ window.OSL_EXPERIMENTS_1_4 = [
         "name": "practice.cpp",
         "path": "03_CPU_Scheduling/practice.cpp",
         "lang": "cpp",
-        "desc": "Unified clock-loop (`for (int t = 0; completed < n; t++)`) + ready-queue implementation of all 6 scheduling algorithms with Arrival Time (`AT`).",
-        "code": "#include <iostream>\n#include <queue>\n#include <string>\n#include <vector>\nusing namespace std;\n\nstruct Process {\n    int id, at, bt, pr;\n};\n\nvoid print_result(const string &title, const vector<Process> &p,\n                  const vector<int> &ct, const vector<int> &tat,\n                  const vector<int> &wt) {\n    float twt = 0, ttat = 0;\n    int n = p.size();\n    cout << \"\\n--- \" << title << \" ---\\n\";\n    cout << \"PID\\tAT\\tBT\\tPR\\tCT\\tTAT\\tWT\\n\";\n    for (int i = 0; i < n; i++) {\n        cout << \"P\" << p[i].id << \"\\t\" << p[i].at << \"\\t\" << p[i].bt\n             << \"\\t\" << p[i].pr << \"\\t\" << ct[i] << \"\\t\" << tat[i]\n             << \"\\t\" << wt[i] << \"\\n\";\n        twt += wt[i];\n        ttat += tat[i];\n    }\n    cout << \"Avg Waiting Time: \" << (twt / n)\n         << \"\\nAvg Turnaround Time: \" << (ttat / n) << \"\\n\";\n}\n\n// Helper: returns indices of all processes currently in the ready queue at time t\nvector<int> get_ready(const vector<Process> &p, const vector<int> &rem, int t) {\n    vector<int> ready;\n    for (int i = 0; i < (int)p.size(); i++) {\n        if (p[i].at <= t && rem[i] > 0) {\n            ready.push_back(i);\n        }\n    }\n    return ready;\n}\n\n// 1. FCFS (Non-Preemptive) — Clock Loop + Ready Queue\nvoid fcfs(const vector<Process> &p) {\n    int n = p.size();\n    vector<int> rem(n), ct(n, 0), tat(n, 0), wt(n, 0);\n    for (int i = 0; i < n; i++) rem[i] = p[i].bt;\n\n    int completed = 0, curr = -1;\n    for (int t = 0; completed < n; t++) {\n        if (curr == -1) {\n            vector<int> ready = get_ready(p, rem, t);\n            for (int i : ready) {\n                if (curr == -1 || p[i].at < p[curr].at) curr = i;\n            }\n        }\n        if (curr == -1) continue; // CPU idle\n\n        rem[curr]--;\n        if (rem[curr] == 0) {\n            ct[curr] = t + 1;\n            tat[curr] = ct[curr] - p[curr].at;\n            wt[curr] = tat[curr] - p[curr].bt;\n            completed++;\n            curr = -1;\n        }\n    }\n    print_result(\"FCFS (Non-Preemptive)\", p, ct, tat, wt);\n}\n\n// 2. SJF (Non-Preemptive) — Clock Loop + Ready Queue\nvoid sjf(const vector<Process> &p) {\n    int n = p.size();\n    vector<int> rem(n), ct(n, 0), tat(n, 0), wt(n, 0);\n    for (int i = 0; i < n; i++) rem[i] = p[i].bt;\n\n    int completed = 0, curr = -1;\n    for (int t = 0; completed < n; t++) {\n        if (curr == -1) {\n            vector<int> ready = get_ready(p, rem, t);\n            for (int i : ready) {\n                if (curr == -1 || p[i].bt < p[curr].bt ||\n                    (p[i].bt == p[curr].bt && p[i].at < p[curr].at)) {\n                    curr = i;\n                }\n            }\n        }\n        if (curr == -1) continue;\n\n        rem[curr]--;\n        if (rem[curr] == 0) {\n            ct[curr] = t + 1;\n            tat[curr] = ct[curr] - p[curr].at;\n            wt[curr] = tat[curr] - p[curr].bt;\n            completed++;\n            curr = -1;\n        }\n    }\n    print_result(\"SJF (Non-Preemptive)\", p, ct, tat, wt);\n}\n\n// 3. SRTF (Preemptive SJF) — Re-check Ready Queue Every Tick!\nvoid srtf(const vector<Process> &p) {\n    int n = p.size();\n    vector<int> rem(n), ct(n, 0), tat(n, 0), wt(n, 0);\n    for (int i = 0; i < n; i++) rem[i] = p[i].bt;\n\n    int completed = 0;\n    for (int t = 0; completed < n; t++) {\n        vector<int> ready = get_ready(p, rem, t);\n        int curr = -1;\n        for (int i : ready) {\n            if (curr == -1 || rem[i] < rem[curr] ||\n                (rem[i] == rem[curr] && p[i].at < p[curr].at)) {\n                curr = i;\n            }\n        }\n        if (curr == -1) continue;\n\n        rem[curr]--;\n        if (rem[curr] == 0) {\n            ct[curr] = t + 1;\n            tat[curr] = ct[curr] - p[curr].at;\n            wt[curr] = tat[curr] - p[curr].bt;\n            completed++;\n        }\n    }\n    print_result(\"SRTF (Preemptive SJF)\", p, ct, tat, wt);\n}\n\n// 4. Priority (Non-Preemptive, low=high) — Clock Loop + Ready Queue\nvoid priority_np(const vector<Process> &p) {\n    int n = p.size();\n    vector<int> rem(n), ct(n, 0), tat(n, 0), wt(n, 0);\n    for (int i = 0; i < n; i++) rem[i] = p[i].bt;\n\n    int completed = 0, curr = -1;\n    for (int t = 0; completed < n; t++) {\n        if (curr == -1) {\n            vector<int> ready = get_ready(p, rem, t);\n            for (int i : ready) {\n                if (curr == -1 || p[i].pr < p[curr].pr ||\n                    (p[i].pr == p[curr].pr && p[i].at < p[curr].at)) {\n                    curr = i;\n                }\n            }\n        }\n        if (curr == -1) continue;\n\n        rem[curr]--;\n        if (rem[curr] == 0) {\n            ct[curr] = t + 1;\n            tat[curr] = ct[curr] - p[curr].at;\n            wt[curr] = tat[curr] - p[curr].bt;\n            completed++;\n            curr = -1;\n        }\n    }\n    print_result(\"Priority (Non-Preemptive, low=high)\", p, ct, tat, wt);\n}\n\n// 5. Priority (Preemptive, low=high) — Re-check Ready Queue Every Tick!\nvoid priority_p(const vector<Process> &p) {\n    int n = p.size();\n    vector<int> rem(n), ct(n, 0), tat(n, 0), wt(n, 0);\n    for (int i = 0; i < n; i++) rem[i] = p[i].bt;\n\n    int completed = 0;\n    for (int t = 0; completed < n; t++) {\n        vector<int> ready = get_ready(p, rem, t);\n        int curr = -1;\n        for (int i : ready) {\n            if (curr == -1 || p[i].pr < p[curr].pr ||\n                (p[i].pr == p[curr].pr && p[i].at < p[curr].at)) {\n                curr = i;\n            }\n        }\n        if (curr == -1) continue;\n\n        rem[curr]--;\n        if (rem[curr] == 0) {\n            ct[curr] = t + 1;\n            tat[curr] = ct[curr] - p[curr].at;\n            wt[curr] = tat[curr] - p[curr].bt;\n            completed++;\n        }\n    }\n    print_result(\"Priority (Preemptive, low=high)\", p, ct, tat, wt);\n}\n\n// 6. Round Robin (Preemptive) — Clock Loop + FIFO Ready Queue\nvoid round_robin(const vector<Process> &p, int time_q) {\n    int n = p.size();\n    vector<int> rem(n), ct(n, 0), tat(n, 0), wt(n, 0);\n    for (int i = 0; i < n; i++) rem[i] = p[i].bt;\n\n    queue<int> rq;\n    int completed = 0, curr = -1, slice = 0;\n\n    for (int t = 0; completed < n; t++) {\n        // 1. Add processes arriving at time t into ready queue\n        for (int i = 0; i < n; i++) {\n            if (p[i].at == t) rq.push(i);\n        }\n\n        // 2. If previous process finished its quantum, push it to the back\n        if (curr != -1 && slice == time_q) {\n            rq.push(curr);\n            curr = -1;\n            slice = 0;\n        }\n\n        // 3. If CPU is free, take next process from ready queue\n        if (curr == -1 && !rq.empty()) {\n            curr = rq.front();\n            rq.pop();\n            slice = 0;\n        }\n\n        if (curr == -1) continue; // CPU idle\n\n        // 4. Execute for 1 tick\n        rem[curr]--;\n        slice++;\n        if (rem[curr] == 0) {\n            ct[curr] = t + 1;\n            tat[curr] = ct[curr] - p[curr].at;\n            wt[curr] = tat[curr] - p[curr].bt;\n            completed++;\n            curr = -1;\n            slice = 0;\n        }\n    }\n    print_result(\"Round Robin (q=\" + to_string(time_q) + \")\", p, ct, tat, wt);\n}\n\nint main() {\n    int n, time_q;\n    cout << \"Enter number of processes: \";\n    cin >> n;\n\n    vector<Process> p(n);\n    for (int i = 0; i < n; i++) {\n        p[i].id = i + 1;\n        cout << \"Enter Arrival Time, Burst Time, Priority for P\" << p[i].id << \": \";\n        cin >> p[i].at >> p[i].bt >> p[i].pr;\n    }\n\n    cout << \"Enter time quantum for Round Robin: \";\n    cin >> time_q;\n\n    fcfs(p);\n    sjf(p);\n    srtf(p);\n    priority_np(p);\n    priority_p(p);\n    round_robin(p, time_q);\n\n    return 0;\n}\n",
+        "desc": "Ultra-clean 124-line unified clock-loop implementation covering all 6 algorithms (FCFS, SJF, SRTF, Priority NP & P, Round Robin) with Arrival Time (`AT`).",
+        "code": "#include <iostream>\n#include <queue>\n#include <string>\n#include <vector>\nusing namespace std;\n\nstruct Process {\n    int id, at, bt, pr;\n};\n\nvoid print_result(const string &title, const vector<Process> &p,\n                  const vector<int> &ct, const vector<int> &tat,\n                  const vector<int> &wt) {\n    float twt = 0, ttat = 0;\n    int n = p.size();\n    cout << \"\\n--- \" << title << \" ---\\n\";\n    cout << \"PID\\tAT\\tBT\\tPR\\tCT\\tTAT\\tWT\\n\";\n    for (int i = 0; i < n; i++) {\n        cout << \"P\" << p[i].id << \"\\t\" << p[i].at << \"\\t\" << p[i].bt\n             << \"\\t\" << p[i].pr << \"\\t\" << ct[i] << \"\\t\" << tat[i]\n             << \"\\t\" << wt[i] << \"\\n\";\n        twt += wt[i];\n        ttat += tat[i];\n    }\n    cout << \"Avg WT: \" << twt / n << \"  |  Avg TAT: \" << ttat / n << \"\\n\";\n}\n\n// Unified scheduler for 1:FCFS, 2:SJF(NP), 3:SRTF(P), 4:Priority(NP), 5:Priority(P)\nvoid schedule(const vector<Process> &p, int mode, const string &title) {\n    int n = p.size();\n    bool preemptive = (mode == 3 || mode == 5);\n    vector<int> rem(n), ct(n), tat(n), wt(n);\n    for (int i = 0; i < n; i++) rem[i] = p[i].bt;\n\n    int done = 0, curr = -1;\n    for (int t = 0; done < n; t++) {\n        // Re-pick if CPU is free (NP) OR every tick (Preemptive)\n        if (curr == -1 || preemptive) {\n            curr = -1;\n            for (int i = 0; i < n; i++) {\n                if (p[i].at > t || rem[i] == 0) continue; // Not in ready queue\n                if (curr == -1) { curr = i; continue; }\n\n                int a = (mode == 1) ? p[i].at  : (mode == 2) ? p[i].bt  :\n                        (mode == 3) ? rem[i]   : p[i].pr;\n                int b = (mode == 1) ? p[curr].at : (mode == 2) ? p[curr].bt :\n                        (mode == 3) ? rem[curr]  : p[curr].pr;\n\n                if (a < b || (a == b && p[i].at < p[curr].at)) curr = i;\n            }\n        }\n        if (curr == -1) continue; // CPU idle\n\n        rem[curr]--;\n        if (rem[curr] == 0) {\n            ct[curr] = t + 1;\n            tat[curr] = ct[curr] - p[curr].at;\n            wt[curr] = tat[curr] - p[curr].bt;\n            done++;\n            curr = -1;\n        }\n    }\n    print_result(title, p, ct, tat, wt);\n}\n\n// 6. Round Robin (Preemptive) with Arrival Time & FIFO Ready Queue\nvoid round_robin(const vector<Process> &p, int q) {\n    int n = p.size();\n    vector<int> rem(n), ct(n), tat(n), wt(n);\n    for (int i = 0; i < n; i++) rem[i] = p[i].bt;\n\n    queue<int> rq;\n    int done = 0, curr = -1, slice = 0;\n\n    for (int t = 0; done < n; t++) {\n        for (int i = 0; i < n; i++)\n            if (p[i].at == t) rq.push(i); // Add newly arrived processes\n\n        if (curr != -1 && slice == q) {   // Quantum expired -> back of queue\n            rq.push(curr);\n            curr = -1;\n            slice = 0;\n        }\n        if (curr == -1 && !rq.empty()) {  // Pick next from queue\n            curr = rq.front();\n            rq.pop();\n            slice = 0;\n        }\n        if (curr == -1) continue;         // CPU idle\n\n        rem[curr]--;\n        slice++;\n        if (rem[curr] == 0) {\n            ct[curr] = t + 1;\n            tat[curr] = ct[curr] - p[curr].at;\n            wt[curr] = tat[curr] - p[curr].bt;\n            done++;\n            curr = -1;\n            slice = 0;\n        }\n    }\n    print_result(\"Round Robin (q=\" + to_string(q) + \")\", p, ct, tat, wt);\n}\n\nint main() {\n    int n, q;\n    cout << \"Enter number of processes: \";\n    cin >> n;\n\n    vector<Process> p(n);\n    for (int i = 0; i < n; i++) {\n        p[i].id = i + 1;\n        cout << \"Enter AT, BT, Priority for P\" << p[i].id << \": \";\n        cin >> p[i].at >> p[i].bt >> p[i].pr;\n    }\n    cout << \"Enter time quantum for Round Robin: \";\n    cin >> q;\n\n    schedule(p, 1, \"FCFS (Non-Preemptive)\");\n    schedule(p, 2, \"SJF (Non-Preemptive)\");\n    schedule(p, 3, \"SRTF (Preemptive SJF)\");\n    schedule(p, 4, \"Priority (Non-Preemptive)\");\n    schedule(p, 5, \"Priority (Preemptive)\");\n    round_robin(p, q);\n    return 0;\n}\n",
         "highlights": [
           {
-            "id": "get-ready",
-            "startLine": 30,
-            "endLine": 38,
+            "id": "sched-head",
+            "startLine": 28,
+            "endLine": 32,
             "badge": "KEY",
-            "label": "Ready Queue Snapshot (`get_ready`)",
-            "explanation": "Checks every process at clock time `t` and collects all arrived, unfinished processes (`p[i].at <= t && rem[i] > 0`) into `ready`."
+            "label": "One Function for 5 Algorithms!",
+            "explanation": "Modes `1..5` share one 30-line clock loop; `preemptive = (mode == 3 || mode == 5)` turns on per-tick preemption for SRTF and Preemptive Priority!"
           },
           {
-            "id": "fcfs-fn",
-            "startLine": 41,
-            "endLine": 64,
+            "id": "sched-pick",
+            "startLine": 36,
+            "endLine": 51,
             "badge": "CORE ALGO",
-            "label": "FCFS — Clock Loop (Non-Preemptive)",
-            "explanation": "Only checks `get_ready()` when CPU is free (`curr == -1`), picks earliest `at`, and runs until `rem[curr] == 0` (`ct = t + 1`)."
+            "label": "Ready Queue Filter & Mode Metric",
+            "explanation": "Re-picks when `curr == -1` (NP) OR every tick (`preemptive`). Skips unarrived/finished (`at > t || rem == 0`), then compares `at` (FCFS), `bt` (SJF), `rem` (SRTF), or `pr` (Priority) with earliest-`at` tie-break!"
           },
           {
-            "id": "sjf-fn",
-            "startLine": 67,
-            "endLine": 94,
-            "badge": "CORE ALGO",
-            "label": "SJF — Clock Loop (Non-Preemptive)",
-            "explanation": "When `curr == -1`, picks smallest `bt` from `get_ready()` (tie-break by `at`) and runs it to completion."
-          },
-          {
-            "id": "srtf-fn",
-            "startLine": 97,
-            "endLine": 122,
-            "badge": "CORE ALGO",
-            "label": "SRTF — Re-Check Ready Queue Every Tick!",
-            "explanation": "Calls `get_ready(p, rem, t)` on EVERY tick `t` and picks smallest `rem[i]`, automatically preempting whenever a shorter job arrives!"
-          },
-          {
-            "id": "pr-np-fn",
-            "startLine": 125,
-            "endLine": 152,
-            "badge": "CORE ALGO",
-            "label": "Priority (Non-Preemptive, Low = High)",
-            "explanation": "Same non-preemptive clock loop as SJF, picking lowest `pr` number when `curr == -1`."
-          },
-          {
-            "id": "pr-p-fn",
-            "startLine": 155,
-            "endLine": 180,
-            "badge": "CORE ALGO",
-            "label": "Priority (Preemptive, Low = High)",
-            "explanation": "Same tick-by-tick preemptive loop as SRTF, picking lowest `pr` from `get_ready()` every tick!"
+            "id": "sched-tick",
+            "startLine": 54,
+            "endLine": 62,
+            "badge": "KEY",
+            "label": "1-Tick Execution & `CT`/`TAT`/`WT`",
+            "explanation": "Decrements `rem[curr]--` each tick `t`. When `rem[curr] == 0`, finishes at `ct = t + 1`, `tat = ct - at`, `wt = tat - bt`, and frees CPU (`curr = -1`)."
           },
           {
             "id": "rr-fn",
-            "startLine": 183,
-            "endLine": 225,
+            "startLine": 67,
+            "endLine": 102,
             "badge": "VIVA TRAP",
             "label": "Round Robin — Clock Loop + FIFO `rq`",
-            "explanation": "Every tick `t`: (1) push processes with `at == t` into `rq`, (2) if `slice == time_q`, push `curr` to back of `rq`, (3) pop next if CPU free, (4) run 1 tick. Guarantees newly arrived processes enter BEFORE the preempted one!"
+            "explanation": "Every tick `t`: (1) push newly arrived `at == t` into `rq`, (2) if `slice == q`, push `curr` to back of `rq`, (3) pop next if CPU free, (4) run 1 tick. Guarantees arrivals enter BEFORE the preempted process!"
           }
         ]
       }
